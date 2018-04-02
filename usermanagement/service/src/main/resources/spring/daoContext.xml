@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/jee
+            http://www.springframework.org/schema/jee/spring-jee.xsd
+            http://www.springframework.org/schema/tx
+            http://www.springframework.org/schema/tx/spring-tx.xsd
+            http://www.springframework.org/schema/data/jpa
+            http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
+
+    <jpa:repositories base-package="com.effectivesoft.usermanagement.dao" entity-manager-factory-ref="entityManagerFactory"
+                      transaction-manager-ref="transactionManager"/>
+
+    <jee:jndi-lookup id="dataSource" jndi-name="jdbc/dataSource"/>
+
+    <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="persistenceUnitManager" ref="persistenceUnitInfoManager"/>
+        <property name="jpaVendorAdapter">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"/>
+        </property>
+        <property name="jpaProperties" ref="daoProperties"/>
+    </bean>
+
+    <bean id="persistenceUnitInfoManager" class="org.springframework.orm.jpa.persistenceunit.DefaultPersistenceUnitManager">
+        <property name="defaultPersistenceUnitName" value="pu"/>
+        <property name="defaultDataSource" ref="dataSource"/>
+        <property name="packagesToScan" value="com.effectivesoft.usermanagement.entity"/>
+    </bean>
+
+    <bean id="daoProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="location" value="classpath:/properties/dao.properties"/>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager" />
+
+    <context:annotation-config/>
+    <context:component-scan base-package="com.effectivesoft.usermanagement.dao"/>
+
+</beans>
