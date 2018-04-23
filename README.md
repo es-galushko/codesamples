@@ -7,3 +7,5 @@ Java sample - Stripe payment system integration
 Java samlple - user management services
 ## ios
 The folder contains several swift exmaples for UIViewController, model object, UIView customization
+## Android
+The folder contains several java exmaples for mvp, repository organization and analytics logging util class
