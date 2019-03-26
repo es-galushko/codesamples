@@ -1,0 +1,27 @@
+# More documentation about how to customize your build
+# can be found here:
+# https://docs.fastlane.tools
+fastlane_version "1.109.0"
+
+# This value helps us track success metrics for Fastfiles
+# we automatically generate. Feel free to remove this line
+# once you get things running smoothly!
+generated_fastfile_id "c46ead23-6fcc-4c91-a895-0fedce486989"
+
+default_platform :android
+
+# Fastfile actions accept additional configuration, but
+# don't worry, fastlane will prompt you for required
+# info which you can add here later
+lane :qa do
+  # build the release variant
+  gradle(task: "assembleQaRelease")
+
+  # upload to Beta by Crashlytics
+  crashlytics(
+    # keys for organization: Effective-Soft
+    api_token: "xxxxx",
+    build_secret: "xxxxx",
+    emails: "xxx.xxx@effective-soft.com,xxx.xxx@effective-soft.com"
+  )
+end

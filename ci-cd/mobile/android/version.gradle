@@ -1,0 +1,75 @@
+// USAGE
+
+    defaultConfig {
+        minSdkVersion versions.minSdk
+        targetSdkVersion versions.targetSdk
+        versionName androidGitVersion.name()
+        versionCode androidGitVersion.code()
+    }
+	
+// USAGE
+
+
+
+// GRADLE FILE
+
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
+apply plugin: "com.gladed.androidgitversion"
+
+/**
+ * Use `gradlew --quiet androidGitVersion[Flavor]` to see generated versionName and versionCode
+ * Note that version will be incorrect if run a task without specified flavor
+ */
+
+
+androidGitVersion {
+    codeFormat 'MNP'
+    format '%tag%%-count%%-dirty%'
+    tagPattern getTagPrefixByFlavor() + '/\\d[/.]\\d[/.]\\d'
+    prefix getTagPrefixByFlavor() + '/'
+}
+
+def getTagPrefixByFlavor() {
+    def PREFIXES = [
+            'flavor1': 'flavor1',
+            'flavor2': 'flavor2',
+            'flavor3': 'flavor3',
+            'flavor4': 'flavor4'
+    ]
+    return PREFIXES[getCurrentFlavor()]
+}
+
+def getCurrentFlavor() {
+    String taskRequestString = getGradle().getStartParameter().getTaskRequests().toString()
+
+    Pattern pattern
+    taskRequestString = taskRequestString.replace('Release', '').replace('Debug', '')
+
+    if (taskRequestString.contains("assemble"))
+        pattern = Pattern.compile("assemble(\\w+)")
+    else if (taskRequestString.contains("generate"))
+        pattern = Pattern.compile("generate(\\w+)")
+    else {
+        pattern = Pattern.compile("androidGitVersion(\\w+)")
+    }
+
+    Matcher matcher = pattern.matcher(taskRequestString)
+
+    if (matcher.find())
+        return matcher.group(1).toLowerCase()
+    else {
+        return "NOT_FOUND"
+    }
+}
+
+android.applicationVariants.all { variant ->
+    task("androidGitVersion${variant.flavorName.capitalize()}", overwrite: true) {
+        dependsOn 'androidGitVersion'
+    }
+    task("androidGitVersion${variant.name.capitalize()}") {
+        dependsOn 'androidGitVersion'
+    }
+}
+// GRADLE FILE
