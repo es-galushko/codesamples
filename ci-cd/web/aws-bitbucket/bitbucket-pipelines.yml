@@ -1,0 +1,128 @@
+image: node:10.4.1
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: PR Test
+          max-time: 10
+          caches:
+            - node
+          script:
+            - npm install
+            - npm run test:ci
+            - npm run lint
+  branches:
+    hotfix-*:
+      - step:
+          name: Test before deploying
+          max-time: 10
+          caches:
+            - node
+          script:
+            - npm install
+            - npm run test:ci
+            - npm run lint
+      - step:
+          name: Deploy to demo
+          max-time: 10
+          deployment: test
+          trigger: manual
+          caches:
+            - node
+          script:
+            - npm install
+            - declare -x VERSION=$(node ./deploy/hotfixversion.js)-${BITBUCKET_BUILD_NUMBER}
+            - echo ${VERSION}
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git config user.name "CI"
+            - git config user.email "ci@company.com"
+            - git tag ${VERSION}
+            - git push origin --tags
+            - npm run build:production
+            - npm run db-deploy
+            - node ./deploy/eb.js demo
+      - step:
+          name: Deploy to staging
+          max-time: 10
+          deployment: staging
+          trigger: manual
+          caches:
+            - node
+          script:
+            - npm install
+            - declare -x VERSION=$(node ./deploy/hotfixversion.js)-${BITBUCKET_BUILD_NUMBER}
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git fetch --tags
+            - git reset ${VERSION}
+            - DB_HOST=${DB_HOST_STAGING} DB_USER=${DB_USER_STAGING} DB_PASSWORD=${DB_PASSWORD_STAGING} DB_DATABASE=${DB_DATABASE_STAGING} npm run db-deploy
+            - node ./deploy/eb.js staging
+      - step:
+          name: Deploy to production
+          max-time: 10
+          deployment: production
+          trigger: manual
+          caches:
+            - node
+          script:
+            - npm install
+            - declare -x VERSION=$(node ./deploy/hotfixversion.js)-${BITBUCKET_BUILD_NUMBER}
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git fetch --tags
+            - git reset ${VERSION}
+            - DB_HOST=${DB_HOST_PROD} DB_USER=${DB_USER_PROD} DB_PASSWORD=${DB_PASSWORD_PROD} DB_DATABASE=${DB_DATABASE_PROD} npm run db-deploy
+            - node ./deploy/eb.js prod
+    develop:
+      - step:
+          name: Deploy to demo
+          max-time: 10
+          deployment: test
+          caches:
+            - node
+          script:
+            - npm install
+            - npm run test:ci
+            - npm run lint
+            - declare -x VERSION=$(node ./deploy/autoversion.js)
+            - echo ${VERSION}
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git config user.name "CI"
+            - git config user.email "ci@company.com"
+            - git pull origin `git rev-parse --abbrev-ref HEAD`
+            - git commit package.json -m "${VERSION} version bump [skip CI]"
+            - git push origin `git rev-parse --abbrev-ref HEAD`
+            - git tag ${VERSION}
+            - git push origin --tags
+            - npm run build:production
+            - npm run db-deploy
+            - node ./deploy/eb.js demo
+      - step:
+          name: Deploy to staging
+          max-time: 10
+          deployment: staging
+          trigger: manual
+          caches:
+            - node
+          script:
+            - npm install
+            - declare -x VERSION=$(node ./deploy/autoversion.js)
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git fetch --tags
+            - git reset ${VERSION}
+            - DB_HOST=${DB_HOST_STAGING} DB_USER=${DB_USER_STAGING} DB_PASSWORD=${DB_PASSWORD_STAGING} DB_DATABASE=${DB_DATABASE_STAGING} npm run db-deploy
+            - node ./deploy/eb.js staging
+      - step:
+          name: Deploy to production
+          max-time: 10
+          deployment: production
+          trigger: manual
+          caches:
+            - node
+          script:
+            - npm install
+            - declare -x VERSION=$(node ./deploy/autoversion.js)
+            - git remote set-url origin ${BITBUCKET_GIT_SSH_ORIGIN}
+            - git fetch --tags
+            - git reset ${VERSION}
+            - DB_HOST=${DB_HOST_PROD} DB_USER=${DB_USER_PROD} DB_PASSWORD=${DB_PASSWORD_PROD} DB_DATABASE=${DB_DATABASE_PROD} npm run db-deploy
+            - node ./deploy/eb.js prod
